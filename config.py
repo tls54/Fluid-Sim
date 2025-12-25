@@ -4,23 +4,23 @@ from dataclasses import dataclass
 @dataclass
 class SimParams:
     # Grid - keep small for speed
-    width: int = 72
-    height: int = 128
+    width: int = 142
+    height: int = 256
     h: float = 1.0
     
     # Time stepping - INCREASE for faster action
-    dt: float = 0.2  # Larger timestep = faster motion
+    dt: float = 0.3  # Larger timestep = faster motion
     
     # Physics - STRONGER buoyancy
     rho: float = 1.0
-    alpha: float = 1.0  # Much stronger buoyancy (was 0.1)
-    epsilon: float = 0.0
+    alpha: float = 1.0  
+    epsilon: float = 0.05
     
     # Source - WEAKER but continuous
-    source_x: int = 32
-    source_y: int = 8  # Slightly higher
-    source_radius: float = 2.0  # Wider
-    source_strength: float = 2.0  # Weaker source
+    source_x: int = 64
+    source_y: int = 8  
+    source_radius: float = 4.0  
+    source_strength: float = 2.0  
     
     # Solver
     pressure_iterations: int = 50  # Back to reasonable

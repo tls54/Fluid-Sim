@@ -62,17 +62,58 @@ def add_density_source(density, source_x, source_y, source_radius, source_streng
 def vorticity_confinement(velocity, epsilon, h, dt):
     """
     Add vorticity confinement force to maintain turbulence.
-
-    TODO: Implement later if needed for visual enhancement.
-
+    
+    Adds small-scale rotational detail that numerical diffusion removes.
+    
     Args:
         velocity: Velocity field [H, W, 2]
-        epsilon: Confinement strength
+        epsilon: Confinement strength (typically 0.01 - 0.5)
         h: Grid spacing
         dt: Timestep
-
+    
     Returns:
         velocity: Updated velocity field [H, W, 2]
     """
-    # Not implemented yet
+    if epsilon == 0:
+        return velocity  # Skip if disabled
+    
+    height, width = velocity.shape[:2]
+    u = velocity[:, :, 0]
+    v = velocity[:, :, 1]
+    
+    # Step 1: Compute vorticity ω = ∂v/∂x - ∂u/∂y
+    vorticity = np.zeros((height, width))
+    
+    # Central differences for interior
+    vorticity[1:-1, 1:-1] = (
+        (v[1:-1, 2:] - v[1:-1, :-2]) / (2 * h) -  # ∂v/∂x
+        (u[2:, 1:-1] - u[:-2, 1:-1]) / (2 * h)    # ∂u/∂y
+    )
+    
+    # Step 2: Compute gradient of |ω|
+    abs_vorticity = np.abs(vorticity)
+    
+    # Gradient of |ω|
+    dw_dx = np.zeros((height, width))
+    dw_dy = np.zeros((height, width))
+    
+    dw_dx[1:-1, 1:-1] = (abs_vorticity[1:-1, 2:] - abs_vorticity[1:-1, :-2]) / (2 * h)
+    dw_dy[1:-1, 1:-1] = (abs_vorticity[2:, 1:-1] - abs_vorticity[:-2, 1:-1]) / (2 * h)
+    
+    # Step 3: Normalize to get N = ∇|ω| / |∇|ω||
+    gradient_mag = np.sqrt(dw_dx**2 + dw_dy**2) + 1e-10  # Add small epsilon to avoid division by zero
+    
+    N_x = dw_dx / gradient_mag
+    N_y = dw_dy / gradient_mag
+    
+    # Step 4: Compute confinement force
+    # In 2D: f = ε·h·(N × ω) where × is perpendicular product
+    # (N_x, N_y) × ω gives force perpendicular to gradient
+    force_x = epsilon * h * N_y * vorticity  # Perpendicular: swap and negate one
+    force_y = epsilon * h * (-N_x) * vorticity
+    
+    # Apply force
+    velocity[:, :, 0] += force_x * dt
+    velocity[:, :, 1] += force_y * dt
+    
     return velocity

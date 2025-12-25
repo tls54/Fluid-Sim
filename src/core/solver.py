@@ -2,7 +2,7 @@
 import numpy as np
 from src.core.grid import FluidGrid
 from src.core.advection import advect_maccormack
-from src.core.forces import apply_buoyancy, add_density_source
+from src.core.forces import apply_buoyancy, add_density_source, vorticity_confinement
 from src.core.projections import (
     compute_divergence,
     solve_pressure_poisson,
@@ -85,6 +85,14 @@ class FluidSolver:
             self.grid.velocity,
             self.grid.density,
             alpha=self.params.alpha,
+            dt=dt
+        )
+
+        # NEW: Add vorticity confinement
+        self.grid.velocity = vorticity_confinement(
+            self.grid.velocity,
+            epsilon=self.params.epsilon,
+            h=h,
             dt=dt
         )
         
