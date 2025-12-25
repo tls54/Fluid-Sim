@@ -1,58 +1,37 @@
-import numpy as np
+"""
+Pressure projection to enforce incompressibility.
+
+Boundary Conditions:
+- Pressure: Zero Dirichlet (p = 0 at domain edges)
+- Velocity: Normal component enforced by solver (see solver.py)
+
+The pressure Poisson equation ∇²p = (ρ/dt)·∇·u is solved with:
+- Zero pressure at boundaries (implicit in Laplacian stencil)
+- Interior points use 5-point stencil
+- Origin pinned to p[0,0] = 0 to break degeneracy
+"""
 from scipy.sparse import lil_matrix
 from scipy.sparse.linalg import cg
 
+from ..utils.boundary import compute_gradient_with_boundaries, compute_divergence_with_boundaries
 
-def compute_divergence(velocity, h):
+
+def compute_divergence(velocity, h, boundary_type='no-slip'):
     """
     Compute divergence of velocity field: ∇·u = ∂u/∂x + ∂v/∂y
-    
-    Uses central differences for interior points, one-sided for boundaries.
-    
+
+    Uses unified boundary handling from boundary utilities module.
+
     Args:
         velocity: Velocity field [H, W, 2]
         h: Grid spacing
-    
+        boundary_type: Boundary condition type ('no-slip', 'free-slip', 'periodic')
+
     Returns:
         divergence: Divergence field [H, W]
     """
-    height, width = velocity.shape[:2]
-    divergence = np.zeros((height, width))
-    
-    # Extract u and v components
-    u = velocity[:, :, 0]
-    v = velocity[:, :, 1]
-    
-    # Interior: central differences
-    du_dx = (u[1:-1, 2:] - u[1:-1, :-2]) / (2 * h)
-    dv_dy = (v[2:, 1:-1] - v[:-2, 1:-1]) / (2 * h)
-    divergence[1:-1, 1:-1] = du_dx + dv_dy
-    
-    # Boundaries: one-sided differences
-    
-    # Left edge (i=0): forward difference for ∂u/∂x
-    divergence[1:-1, 0] = (u[1:-1, 1] - u[1:-1, 0]) / h + \
-                          (v[2:, 0] - v[:-2, 0]) / (2 * h)
-    
-    # Right edge (i=-1): backward difference for ∂u/∂x
-    divergence[1:-1, -1] = (u[1:-1, -1] - u[1:-1, -2]) / h + \
-                           (v[2:, -1] - v[:-2, -1]) / (2 * h)
-    
-    # Bottom edge (j=0): forward difference for ∂v/∂y
-    divergence[0, 1:-1] = (u[0, 2:] - u[0, :-2]) / (2 * h) + \
-                          (v[1, 1:-1] - v[0, 1:-1]) / h
-    
-    # Top edge (j=-1): backward difference for ∂v/∂y
-    divergence[-1, 1:-1] = (u[-1, 2:] - u[-1, :-2]) / (2 * h) + \
-                           (v[-1, 1:-1] - v[-2, 1:-1]) / h
-    
-    # Corners: both one-sided
-    divergence[0, 0] = (u[0, 1] - u[0, 0]) / h + (v[1, 0] - v[0, 0]) / h
-    divergence[0, -1] = (u[0, -1] - u[0, -2]) / h + (v[1, -1] - v[0, -1]) / h
-    divergence[-1, 0] = (u[-1, 1] - u[-1, 0]) / h + (v[-1, 0] - v[-2, 0]) / h
-    divergence[-1, -1] = (u[-1, -1] - u[-1, -2]) / h + (v[-1, -1] - v[-2, -1]) / h
-    
-    return divergence
+    # Use shared boundary utilities for consistency
+    return compute_divergence_with_boundaries(velocity, h, boundary_type)
 
 
 def build_laplacian_matrix(height, width, h):
@@ -105,12 +84,12 @@ def build_laplacian_matrix(height, width, h):
 
 
 
-def solve_pressure_poisson(divergence, h, rho, dt, max_iterations=50, tolerance=1e-4):
+def solve_pressure_poisson(divergence, h, rho, dt, max_iterations=50, tolerance=1e-4, laplacian_matrix=None):
     """
     Solve Poisson equation for pressure: ∇²p = (ρ/dt)·∇·u
-    
+
     Uses Conjugate Gradient iterative solver.
-    
+
     Args:
         divergence: Divergence field [H, W]
         h: Grid spacing
@@ -118,15 +97,19 @@ def solve_pressure_poisson(divergence, h, rho, dt, max_iterations=50, tolerance=
         dt: Timestep
         max_iterations: Max CG iterations
         tolerance: Convergence tolerance
-    
+        laplacian_matrix: Pre-built Laplacian matrix (optional, for performance)
+
     Returns:
         pressure: Pressure field [H, W]
     """
     height, width = divergence.shape
     N = height * width
-    
-    # Build Laplacian matrix
-    A = build_laplacian_matrix(height, width, h)
+
+    # Build or use cached Laplacian matrix
+    if laplacian_matrix is not None:
+        A = laplacian_matrix
+    else:
+        A = build_laplacian_matrix(height, width, h)
     
     # Build RHS: b = (rho/dt) * divergence
     b = (rho / dt) * divergence.flatten()
@@ -148,52 +131,28 @@ def solve_pressure_poisson(divergence, h, rho, dt, max_iterations=50, tolerance=
     return pressure
 
 
-def apply_pressure_gradient(velocity, pressure, h, rho, dt):
+def apply_pressure_gradient(velocity, pressure, h, rho, dt, boundary_type='no-slip'):
     """
     Subtract pressure gradient from velocity to make it divergence-free.
-    
+
     u_new = u - (dt/ρ)·∇p
-    
+
+    Uses unified boundary handling from boundary utilities module.
+
     Args:
         velocity: Velocity field before projection [H, W, 2]
         pressure: Pressure field [H, W]
         h: Grid spacing
         rho: Fluid density
         dt: Timestep
-    
+        boundary_type: Boundary condition type ('no-slip', 'free-slip', 'periodic')
+
     Returns:
         velocity: Corrected velocity field [H, W, 2]
     """
-    height, width = pressure.shape
-    dp_dx = np.zeros((height, width))
-    dp_dy = np.zeros((height, width))
-    
-    # Interior: central differences
-    dp_dx[1:-1, 1:-1] = (pressure[1:-1, 2:] - pressure[1:-1, :-2]) / (2 * h)
-    dp_dy[1:-1, 1:-1] = (pressure[2:, 1:-1] - pressure[:-2, 1:-1]) / (2 * h)
-    
-    # Boundaries: one-sided differences
-    # Left edge (i=0): forward difference
-    dp_dx[1:-1, 0] = (pressure[1:-1, 1] - pressure[1:-1, 0]) / h
-    # Right edge (i=-1): backward difference
-    dp_dx[1:-1, -1] = (pressure[1:-1, -1] - pressure[1:-1, -2]) / h
-    
-    # Bottom edge (j=0): forward difference
-    dp_dy[0, 1:-1] = (pressure[1, 1:-1] - pressure[0, 1:-1]) / h
-    # Top edge (j=-1): backward difference
-    dp_dy[-1, 1:-1] = (pressure[-1, 1:-1] - pressure[-2, 1:-1]) / h
-    
-    # Corners (just use neighboring values)
-    dp_dx[0, 0] = (pressure[0, 1] - pressure[0, 0]) / h
-    dp_dx[0, -1] = (pressure[0, -1] - pressure[0, -2]) / h
-    dp_dx[-1, 0] = (pressure[-1, 1] - pressure[-1, 0]) / h
-    dp_dx[-1, -1] = (pressure[-1, -1] - pressure[-1, -2]) / h
-    
-    dp_dy[0, 0] = (pressure[1, 0] - pressure[0, 0]) / h
-    dp_dy[0, -1] = (pressure[1, -1] - pressure[0, -1]) / h
-    dp_dy[-1, 0] = (pressure[-1, 0] - pressure[-2, 0]) / h
-    dp_dy[-1, -1] = (pressure[-1, -1] - pressure[-2, -1]) / h
-    
+    # Use shared boundary utilities for consistent gradient computation
+    dp_dx, dp_dy = compute_gradient_with_boundaries(pressure, h, boundary_type)
+
     # Apply correction: u = u - (dt/rho) * ∇p
     velocity[:, :, 0] -= (dt / rho) * dp_dx
     velocity[:, :, 1] -= (dt / rho) * dp_dy

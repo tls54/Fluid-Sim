@@ -17,7 +17,7 @@ def apply_buoyancy(velocity, density, alpha, dt):
     Returns:
         velocity: Updated velocity field [H, W, 2]
     """
-    
+
     velocity[:, :, 1] += alpha * density * dt
     return velocity
 
@@ -40,9 +40,6 @@ def add_density_source(density, source_x, source_y, source_radius, source_streng
         density: Updated density field [H, W]
     """
     height, width = density.shape
-    
-    # TODO: For each grid point, compute distance from source
-    # TODO: Add Gaussian: density += strength * exp(-r²/radius²) * dt
     
     # Create coordinate grids
     y_grid, x_grid = np.indices((height, width))

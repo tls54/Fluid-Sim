@@ -33,10 +33,9 @@ def main():
     ax1.set_ylabel('y')
     plt.colorbar(im1, ax=ax1, label='Density')
     
-    # Velocity magnitude plot
-    vel_magnitude = np.sqrt(grid.u**2 + grid.v**2)
+    # Velocity magnitude plot (use initial zero velocity)
     im2 = ax2.imshow(
-        vel_magnitude,
+        solver.velocity_magnitude,
         origin='lower',
         cmap='viridis',
         animated=True
@@ -52,9 +51,9 @@ def main():
         
         # Update density
         im1.set_array(grid.density)
-        
-        # Update velocity magnitude
-        vel_magnitude = np.sqrt(grid.u**2 + grid.v**2)
+
+        # Use cached velocity magnitude (performance optimization)
+        vel_magnitude = solver.velocity_magnitude
         im2.set_array(vel_magnitude)
         im2.set_clim(vmin=0, vmax=vel_magnitude.max())
         
