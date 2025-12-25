@@ -1,4 +1,3 @@
-# src/utils/interpolation.py
 import numpy as np
 
 def bilinear_interpolate(field, x, y, boundary='clamp'):

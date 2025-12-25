@@ -57,6 +57,7 @@ class FluidGrid:
         """String representation of grid"""
         return f"FluidGrid({self.width}x{self.height}, h={self.h})"
 
+
 if __name__ == '__main__':
     # Create a small test grid
     grid = FluidGrid(height=5, width=5, h=1.0)

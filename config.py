@@ -3,33 +3,34 @@ from dataclasses import dataclass
 
 @dataclass
 class SimParams:
-    # Grid
-    width: int = 128
+    # Grid - keep small for speed
+    width: int = 72
     height: int = 128
-    h: float = 1.0          # Grid spacing
+    h: float = 1.0
     
-    # Time
-    dt: float = 0.1
+    # Time stepping - INCREASE for faster action
+    dt: float = 0.2  # Larger timestep = faster motion
     
-    # Physics
-    rho: float = 1.0        # Density
-    alpha: float = 0.1      # Buoyancy strength
-    epsilon: float = 0.0    # Vorticity confinement (start with 0)
+    # Physics - STRONGER buoyancy
+    rho: float = 1.0
+    alpha: float = 1.0  # Much stronger buoyancy (was 0.1)
+    epsilon: float = 0.0
     
-    # Source
-    source_x: int = 64
-    source_y: int = 10
-    source_radius: float = 5.0
-    source_strength: float = 1.0
-
-    # Solver parameters
-    pressure_iterations: int = 50  # Max iterations for conjugate gradient
-    pressure_tolerance: float = 1e-4
+    # Source - WEAKER but continuous
+    source_x: int = 32
+    source_y: int = 8  # Slightly higher
+    source_radius: float = 2.0  # Wider
+    source_strength: float = 2.0  # Weaker source
+    
+    # Solver
+    pressure_iterations: int = 50  # Back to reasonable
+    pressure_tolerance: float = 1e-3
     
     # Visualization
-    colormap: str = 'viridis'   # Matplotlib colormap
-    vmin: float = 0.0       # Min density for colormap
-    vmax: float = 1.0       # Max density for colormap
+    colormap: str = 'hot'
+    vmin: float = 0.0
+    vmax: float = 3.0
+
 
 
 slow_detailed = SimParams(width=256, height=256, dt=0.05)
