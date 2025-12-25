@@ -17,7 +17,7 @@ def apply_buoyancy(velocity, density, alpha, dt):
     Returns:
         velocity: Updated velocity field [H, W, 2]
     """
-    # TODO: Add -alpha * density * dt to v-component
+    
     velocity[:, :, 1] += alpha * density * dt
     return velocity
 

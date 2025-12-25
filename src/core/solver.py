@@ -64,9 +64,8 @@ class FluidSolver:
         self.grid.velocity[:, :, 0] = new_u
         self.grid.velocity[:, :, 1] = new_v
         
-        # Density dissipation - STRONGER
-        dissipation_rate = 0.995  # Lose 0.5% per frame
-        self.grid.density *= dissipation_rate
+        # Density dissipation
+        self.grid.density *= self.params.dissipation_rate
         
         # ===== STEP 2: FORCES =====
         self.grid.density = add_density_source(
@@ -79,7 +78,7 @@ class FluidSolver:
         )
         
         # Cap density to prevent accumulation
-        self.grid.density = np.clip(self.grid.density, 0, 10.0)
+        self.grid.density = np.clip(self.grid.density, 0, self.params.max_density)
         
         self.grid.velocity = apply_buoyancy(
             self.grid.velocity,
@@ -124,16 +123,15 @@ class FluidSolver:
         )
         
         # Velocity limiting - CRITICAL for stability
-        max_velocity = 5.0  # Hard cap on velocity magnitude
         vel_mag = np.sqrt(self.grid.u**2 + self.grid.v**2)
-        mask = vel_mag > max_velocity
+        mask = vel_mag > self.params.max_velocity
         if np.any(mask):
-            scale = max_velocity / vel_mag[mask]
+            scale = self.params.max_velocity / vel_mag[mask]
             self.grid.velocity[mask, 0] *= scale
             self.grid.velocity[mask, 1] *= scale
         
         # Mild velocity damping
-        self.grid.velocity *= 0.99
+        self.grid.velocity *= self.params.velocity_damping
         # Hard boundary conditions
         self.grid.velocity[0, :, 1] = 0   # Bottom wall
         self.grid.velocity[-1, :, 1] = 0  # Top wall
@@ -141,11 +139,9 @@ class FluidSolver:
         self.grid.velocity[:, -1, 0] = 0  # Right wall
 
         # Damp near boundaries to reduce artifacts
-        boundary_width = 2
-        damping = 0.7
-        self.grid.velocity[:, :boundary_width, :] *= damping
-        self.grid.velocity[:, -boundary_width:, :] *= damping
-        self.grid.velocity[:boundary_width, :, :] *= damping
-        self.grid.velocity[-boundary_width:, :, :] *= damping
+        self.grid.velocity[:, :self.params.boundary_width, :] *= self.params.boundary_damping
+        self.grid.velocity[:, -self.params.boundary_width:, :] *= self.params.boundary_damping
+        self.grid.velocity[:self.params.boundary_width, :, :] *= self.params.boundary_damping
+        self.grid.velocity[-self.params.boundary_width:, :, :] *= self.params.boundary_damping
         
         self.frame_count += 1

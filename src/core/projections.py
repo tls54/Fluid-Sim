@@ -137,10 +137,10 @@ def solve_pressure_poisson(divergence, h, rho, dt, max_iterations=50, tolerance=
     # Solve A·p = b using Conjugate Gradient
     p_flat, info = cg(A, b, maxiter=max_iterations, rtol=tolerance)
     
-    #if info > 0:
-        #print(f"Warning: CG did not converge in {max_iterations} iterations")
-    #elif info < 0:
-    #   print(f"Error: CG failed with code {info}")
+    if info > 0:
+        print(f"Warning: CG did not converge in {max_iterations} iterations")
+    elif info < 0:
+        print(f"Error: CG failed with code {info}")
     
     # Reshape back to 2D
     pressure = p_flat.reshape((height, width))

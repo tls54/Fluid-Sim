@@ -14,8 +14,8 @@ def bilinear_interpolate(field, x, y, boundary='clamp'):
         Interpolated values at (x, y)
     """
     if boundary != 'clamp':
-        print('We only handle clamp boundary conditions at the moment.')
-        return None
+        raise ValueError(f"Unsupported boundary condition: {boundary}. Only 'clamp' is supported.")
+
 
     height, width = field.shape
     

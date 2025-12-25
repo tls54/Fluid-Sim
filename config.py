@@ -25,7 +25,15 @@ class SimParams:
     # Solver
     pressure_iterations: int = 50  # Back to reasonable
     pressure_tolerance: float = 1e-3
-    
+
+    # Stability parameters
+    dissipation_rate: float = 0.995  # Density dissipation per frame (0.995 = lose 0.5% per frame)
+    max_density: float = 10.0  # Maximum density cap to prevent accumulation
+    max_velocity: float = 5.0  # Hard cap on velocity magnitude for stability
+    velocity_damping: float = 0.99  # Mild velocity damping factor
+    boundary_damping: float = 0.7  # Damping factor near boundaries to reduce artifacts
+    boundary_width: int = 2  # Width of boundary damping region (in grid cells)
+
     # Visualization
     colormap: str = 'hot'
     vmin: float = 0.0

@@ -13,7 +13,7 @@ class FluidGrid:
         velocity (ndarray): Velocity field [H, W, 2]
         density (ndarray): Density/temperature field [H, W]
     """
-    def __init__(self, height:int, width:int, h):
+    def __init__(self, height:int, width:int, h:float):
         self.height = height
         self.width = width
         self.h = h
