@@ -3,3 +3,4 @@ __pycache__
 fluid_sim.egg-info/
 *.png
 *.pyc
+GPU.md
