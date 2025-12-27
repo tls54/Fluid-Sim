@@ -8,8 +8,13 @@ from src.core.solver import FluidSolver
 from config import scale_default
 
 
-def main(params):
-    """Run the full fluid simulation."""
+def main(params, save_path=None):
+    """Run the full fluid simulation.
+
+    Args:
+        params: Simulation parameters
+        save_path: Optional path to save animation (e.g., 'output.mp4' or 'output.gif')
+    """
     # Create grid and solver
     grid = FluidGrid(params.height, params.width, params.h)
     solver = FluidSolver(grid, params)
@@ -67,10 +72,24 @@ def main(params):
         update,
         frames=500,
         interval=50,  # 50ms = 20 FPS
-        blit=False
+        blit=False,
+        repeat=False  # Stop after 500 frames instead of looping
     )
-    
+
     plt.tight_layout()
+
+    # Save animation if path provided
+    if save_path:
+        print(f"Saving animation to {save_path}...")
+        # Determine writer based on file extension
+        if save_path.endswith('.gif'):
+            anim.save(save_path, writer='pillow', fps=20)
+        else:
+            # Default to MP4 (requires ffmpeg)
+            anim.save(save_path, writer='ffmpeg', fps=20, dpi=100)
+        print(f"Animation saved successfully!")
+
+    # Always display the animation
     plt.show()
 
 
