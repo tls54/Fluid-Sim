@@ -90,6 +90,64 @@ class SimParams:
 
 
 
+def scale_default(s: float) -> SimParams:
+    """
+    Scale the default parameters by factor s following the scaling guide.
+
+    Args:
+        s: Scaling factor (e.g., 2.0 for doubling resolution)
+
+    Returns:
+        SimParams object with scaled parameters
+    """
+    base = SimParams()  # Get default params
+
+    return SimParams(
+        # Grid - scale resolution, inverse scale spacing
+        width=int(base.width * s),
+        height=int(base.height * s),
+        h=base.h / s,
+
+        # Time - quadratic scaling for stability
+        dt=base.dt / (s * s),
+
+        # Physics - unchanged
+        rho=base.rho,
+        alpha=base.alpha,
+        epsilon=base.epsilon,
+
+        # Source - scale position and radius
+        source_x=int(base.source_x * s),
+        source_y=int(base.source_y * s),
+        source_radius=base.source_radius * s,
+        source_strength=base.source_strength,  # Stays constant
+
+        # Solver - heuristic scaling
+        pressure_iterations=int(base.pressure_iterations * (s ** 0.5)),  # sqrt(s)
+        pressure_tolerance=base.pressure_tolerance / s,
+
+        # Stability - rates stay same, limits and widths scale
+        dissipation_rate=base.dissipation_rate,
+        max_density=base.max_density,
+        max_velocity=base.max_velocity * s,
+        velocity_damping=base.velocity_damping,
+        boundary_damping=base.boundary_damping,
+        boundary_width=int(base.boundary_width * s),
+
+        # Boundary conditions
+        boundary_type=base.boundary_type,
+
+        # Performance flags
+        enable_maccormack_clamp=base.enable_maccormack_clamp,
+        cache_laplacian_matrix=base.cache_laplacian_matrix,
+
+        # Visualization
+        colormap=base.colormap,
+        vmin=base.vmin,
+        vmax=base.vmax,
+    )
+
+
 slow_detailed = SimParams(width=256, height=256, dt=0.05)
 fast_preview = SimParams(width=64, height=64, dt=0.2)
 default = SimParams()  # Use defaults

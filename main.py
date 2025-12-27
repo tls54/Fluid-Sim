@@ -5,13 +5,11 @@ from matplotlib.animation import FuncAnimation
 
 from src.core.grid import FluidGrid
 from src.core.solver import FluidSolver
-from config import SimParams
+from config import scale_default
 
 
-def main():
+def main(params):
     """Run the full fluid simulation."""
-    params = SimParams()
-    
     # Create grid and solver
     grid = FluidGrid(params.height, params.width, params.h)
     solver = FluidSolver(grid, params)
@@ -77,4 +75,5 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    params = scale_default(4)
+    main(params)
