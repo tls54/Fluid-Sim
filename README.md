@@ -242,6 +242,8 @@ This creates a sparse linear system **Ap = b** where:
 
 **Solver**: Conjugate Gradient (CG) iterative method via `scipy.sparse.linalg.cg`. Typically converges in 10-50 iterations with tolerance 1e-3.
 
+**Warm Start Optimization**: The previous timestep's pressure solution is used as the initial guess for the CG solver. Since pressure fields change smoothly in time-dependent simulations, this "warm start" significantly improves convergence speed and helps prevent non-convergence issues.
+
 **Step 3: Apply Pressure Gradient**
 
 Subtract the pressure gradient to make velocity divergence-free:
@@ -365,7 +367,12 @@ To prevent numerical blow-up:
    - Pre-build sparse matrix once
    - Toggle: `cache_laplacian_matrix = True` in [config.py](config.py)
 
-2. **Optional MacCormack Clamping** (30-50% speedup when disabled)
+2. **Warm Start CG Solver** (Improved convergence)
+   - Use previous pressure solution as initial guess
+   - Reduces iterations needed for convergence
+   - Automatically enabled when caching is on
+
+3. **Optional MacCormack Clamping** (30-50% speedup when disabled)
    - Clamping requires 3×3 neighborhood checks per cell
    - Disable for faster, slightly less stable advection
    - Toggle: `use_maccormack_clamping = True` in [config.py](config.py)
