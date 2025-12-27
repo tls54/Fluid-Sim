@@ -84,7 +84,7 @@ def build_laplacian_matrix(height, width, h):
 
 
 
-def solve_pressure_poisson(divergence, h, rho, dt, max_iterations=50, tolerance=1e-4, laplacian_matrix=None):
+def solve_pressure_poisson(divergence, h, rho, dt, max_iterations=50, tolerance=1e-4, laplacian_matrix=None, initial_guess=None):
     """
     Solve Poisson equation for pressure: ∇²p = (ρ/dt)·∇·u
 
@@ -98,6 +98,7 @@ def solve_pressure_poisson(divergence, h, rho, dt, max_iterations=50, tolerance=
         max_iterations: Max CG iterations
         tolerance: Convergence tolerance
         laplacian_matrix: Pre-built Laplacian matrix (optional, for performance)
+        initial_guess: Initial pressure guess [H, W] (optional, improves convergence)
 
     Returns:
         pressure: Pressure field [H, W]
@@ -110,15 +111,21 @@ def solve_pressure_poisson(divergence, h, rho, dt, max_iterations=50, tolerance=
         A = laplacian_matrix
     else:
         A = build_laplacian_matrix(height, width, h)
-    
+
     # Build RHS: b = (rho/dt) * divergence
     b = (rho / dt) * divergence.flatten()
-    
+
     # Fix pressure at origin (p[0,0] = 0) to break degeneracy
     b[0] = 0.0
-    
+
+    # Prepare initial guess for CG solver
+    if initial_guess is not None:
+        x0 = initial_guess.flatten()
+    else:
+        x0 = None
+
     # Solve A·p = b using Conjugate Gradient
-    p_flat, info = cg(A, b, maxiter=max_iterations, rtol=tolerance)
+    p_flat, info = cg(A, b, x0=x0, maxiter=max_iterations, rtol=tolerance)
     
     if info > 0:
         print(f"Warning: CG did not converge in {max_iterations} iterations")

@@ -35,6 +35,7 @@ class FluidSolver:
 
         # Performance optimizations: caching
         self._cached_vel_mag = None
+        self._cached_pressure = None  # Cache previous pressure for CG initial guess
 
         # Cache Laplacian matrix if enabled (15-20% speedup)
         if params.cache_laplacian_matrix:
@@ -141,9 +142,13 @@ class FluidSolver:
             dt=dt,
             max_iterations=self.params.pressure_iterations,
             tolerance=self.params.pressure_tolerance,
-            laplacian_matrix=self._cached_laplacian
+            laplacian_matrix=self._cached_laplacian,
+            initial_guess=self._cached_pressure
         )
-        
+
+        # Cache pressure for next timestep's initial guess
+        self._cached_pressure = pressure
+
         self.grid.velocity = apply_pressure_gradient(
             self.grid.velocity,
             pressure,
