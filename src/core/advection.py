@@ -26,8 +26,11 @@ def semi_lagrangian_advect(q, u, v, dt, h, boundary='clamp'):
     x_coords = np.arange(width)
     y_coords = np.arange(height)
     x_grid, y_grid = np.meshgrid(x_coords, y_coords)
-    
+
     # Trace backward along velocity field
+    # Velocities are in physical units (m/s), dt is in seconds, h is grid spacing (m)
+    # Distance traveled: u * dt (in meters)
+    # Convert to grid cells: (u * dt) / h
     x_prev = x_grid - u * dt / h
     y_prev = y_grid - v * dt / h
     

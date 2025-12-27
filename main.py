@@ -75,5 +75,5 @@ def main(params):
 
 
 if __name__ == "__main__":
-    params = scale_default(4)
+    params = scale_default(1)
     main(params)

@@ -9,7 +9,7 @@ width_new = width_old * s
 height_new = height_old * s
 h_new = h_old / s          # CRITICAL: halve spacing to maintain domain size
 
-dt_new = dt_old / s²       # Quarter for s=2 (diffusion stability)
+dt_new = dt_old / s        # Halve for s=2 (maintains CFL number for advection)
 
 
 --- Source Params ---
@@ -108,8 +108,8 @@ def scale_default(s: float) -> SimParams:
         height=int(base.height * s),
         h=base.h / s,
 
-        # Time - quadratic scaling for stability
-        dt=base.dt / (s * s),
+        # Time - linear scaling to maintain CFL number (advection stability)
+        dt=base.dt / s,
 
         # Physics - unchanged
         rho=base.rho,
@@ -127,6 +127,92 @@ def scale_default(s: float) -> SimParams:
         pressure_tolerance=base.pressure_tolerance / s,
 
         # Stability - rates stay same, limits and widths scale
+        dissipation_rate=base.dissipation_rate,
+        max_density=base.max_density,
+        max_velocity=base.max_velocity * s,
+        velocity_damping=base.velocity_damping,
+        boundary_damping=base.boundary_damping,
+        boundary_width=int(base.boundary_width * s),
+
+        # Boundary conditions
+        boundary_type=base.boundary_type,
+
+        # Performance flags
+        enable_maccormack_clamp=base.enable_maccormack_clamp,
+        cache_laplacian_matrix=base.cache_laplacian_matrix,
+
+        # Visualization
+        colormap=base.colormap,
+        vmin=base.vmin,
+        vmax=base.vmax,
+    )
+
+
+def create_with_physical_size(width_meters: float, height_meters: float,
+                              cells_per_meter: float = 1.0) -> SimParams:
+    """
+    Create SimParams by specifying physical domain size and resolution.
+
+    This is an alternative to scale_default() that lets you directly specify
+    the physical dimensions you want.
+
+    Args:
+        width_meters: Physical width of domain in meters
+        height_meters: Physical height of domain in meters
+        cells_per_meter: Grid resolution (cells per meter). Higher = more detail.
+                        Examples:
+                        - 1.0 = 1 cell per meter (default)
+                        - 2.0 = 2 cells per meter (finer detail)
+                        - 0.5 = 1 cell per 2 meters (coarser)
+
+    Returns:
+        SimParams configured for the specified physical domain
+
+    Examples:
+        # Small, detailed simulation: 10m × 20m with 2 cells/meter
+        params = create_with_physical_size(10, 20, cells_per_meter=2.0)
+        # Result: 20×40 grid, h=0.5
+
+        # Large, coarse simulation: 200m × 400m with 0.5 cells/meter
+        params = create_with_physical_size(200, 400, cells_per_meter=0.5)
+        # Result: 100×200 grid, h=2.0
+    """
+    base = SimParams()
+
+    # Calculate grid parameters
+    width_cells = int(width_meters * cells_per_meter)
+    height_cells = int(height_meters * cells_per_meter)
+    h = 1.0 / cells_per_meter
+
+    # Calculate scaling factor relative to default
+    # Default domain is 72m × 128m (with h=1.0, cells_per_meter=1.0)
+    s = cells_per_meter  # Scaling factor for resolution-dependent params
+
+    return SimParams(
+        # Grid
+        width=width_cells,
+        height=height_cells,
+        h=h,
+
+        # Time - scale with grid resolution
+        dt=base.dt / s,
+
+        # Physics - unchanged
+        rho=base.rho,
+        alpha=base.alpha,
+        epsilon=base.epsilon,
+
+        # Source - position in middle, scale radius with resolution
+        source_x=width_cells // 2,
+        source_y=height_cells // 16,  # Near bottom
+        source_radius=base.source_radius * s,
+        source_strength=base.source_strength,
+
+        # Solver
+        pressure_iterations=int(base.pressure_iterations * (s ** 0.5)),
+        pressure_tolerance=base.pressure_tolerance / s,
+
+        # Stability
         dissipation_rate=base.dissipation_rate,
         max_density=base.max_density,
         max_velocity=base.max_velocity * s,
