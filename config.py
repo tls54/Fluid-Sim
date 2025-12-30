@@ -63,6 +63,9 @@ class SimParams:
     source_y: int = 8  
     source_radius: float = 4.0  
     source_strength: float = 2.0  
+    radius_noise = 0.15
+    source_jitter_x = 2
+    source_jitter_y = 1
     
     # Solver
     pressure_iterations: int = 100  # Back to reasonable

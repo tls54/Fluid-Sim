@@ -5,3 +5,4 @@ fluid_sim.egg-info/
 *.pyc
 GPU.md
 checking.ipynb
+density_source_check.py

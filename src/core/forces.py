@@ -54,6 +54,45 @@ def add_density_source(density, source_x, source_y, source_radius, source_streng
     density += source * dt
     return density
 
+def add_density_source_perturbed(density, source_x, source_y, source_radius, source_strength, dt, radius_noise, source_jitter_x, source_jitter_y):
+    """
+    Add a continuous source of density (smoke/heat injection).
+    
+    Creates a Gaussian blob of density centered at (source_x, source_y).
+    
+    Args:
+        density: Density field [H, W]
+        source_x: X-coordinate of source center
+        source_y: Y-coordinate of source center
+        source_radius: Standard deviation of Gaussian (spread)
+        source_strength: Peak intensity of source
+        dt: Timestep
+    
+    Returns:
+        density: Updated density field [H, W]
+    """
+    height, width = density.shape
+
+    # Create coordinate grids
+    y_grid, x_grid = np.indices((height, width))
+
+    # Source jitters
+    jitter_x = [i for i in range(-source_jitter_x, source_jitter_x + 1)]
+    jitter_y = [i for i in range(-source_jitter_y, source_jitter_y + 1)]
+
+    # Distance from source with random jitter
+    dx = x_grid - source_x + np.random.choice(jitter_x)
+    dy = y_grid - source_y + np.random.choice(jitter_y)
+    r_squared = dx**2 + dy**2
+
+    # Add noise to radius 
+    perturbed_radius = max(0.1, source_radius * (1 + (radius_noise * np.random.uniform(-1, 1))))
+
+    # Add Gaussian blob
+    source = source_strength * np.exp(-r_squared / (2 * perturbed_radius**2))
+    density += source * dt
+    return density
+
 
 
 def vorticity_confinement(velocity, epsilon, h, dt):

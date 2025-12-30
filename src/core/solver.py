@@ -2,7 +2,7 @@
 import numpy as np
 from src.core.grid import FluidGrid
 from src.core.advection import advect_maccormack
-from src.core.forces import apply_buoyancy, add_density_source, vorticity_confinement
+from src.core.forces import apply_buoyancy, add_density_source_perturbed, vorticity_confinement
 from src.core.projections import (
     compute_divergence,
     solve_pressure_poisson,
@@ -98,13 +98,16 @@ class FluidSolver:
         self.grid.density *= self.params.dissipation_rate
         
         # ===== STEP 2: FORCES =====
-        self.grid.density = add_density_source(
+        self.grid.density = add_density_source_perturbed(
             self.grid.density,
             source_x=self.params.source_x,
             source_y=self.params.source_y,
             source_radius=self.params.source_radius,
             source_strength=self.params.source_strength,
-            dt=dt
+            dt=dt,
+            radius_noise=self.params.radius_noise,
+            source_jitter_x=self.params.source_jitter_x,
+            source_jitter_y=self.params.source_jitter_y
         )
         
         # Cap density to prevent accumulation
