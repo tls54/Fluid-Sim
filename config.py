@@ -56,16 +56,16 @@ class SimParams:
     # Physics - STRONGER buoyancy
     rho: float = 1.0  # Fluid density [kg/m³]
     alpha: float = 1.0  # Buoyancy strength [m/s² per density unit]
-    epsilon: float = 0.05  # Vorticity confinement strength [dimensionless]
+    epsilon: float = 0.1  # Vorticity confinement strength [dimensionless]
     
     # Source - WEAKER but continuous
     source_x: int = 32
     source_y: int = 8  
     source_radius: float = 4.0  
     source_strength: float = 2.0  
-    radius_noise = 0.15
-    source_jitter_x = 2
-    source_jitter_y = 1
+    radius_noise = 0.35
+    source_jitter_x = 5
+    source_jitter_y = 5
     
     # Solver
     pressure_iterations: int = 100  # Back to reasonable
@@ -77,7 +77,7 @@ class SimParams:
     max_velocity: float = 7.0  # Hard cap on velocity magnitude for stability
     velocity_damping: float = 0.99  # Mild velocity damping factor
     boundary_damping: float = 0.7  # Damping factor near boundaries to reduce artifacts
-    boundary_width: int = 2  # Width of boundary damping region (in grid cells)
+    boundary_width: int = 4  # Width of boundary damping region (in grid cells)
 
     # Boundary conditions
     boundary_type: str = 'no-slip'  # Options: 'no-slip', 'free-slip', 'periodic'
